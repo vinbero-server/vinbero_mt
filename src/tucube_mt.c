@@ -19,11 +19,25 @@ struct tucube_mt_Interface {
 
 struct tucube_mt_LocalModule {
     int workerCount;
-    int requiresNext;
+    bool exit;
+    pthread_cond_t exitCond;
+    pthread_mutex_t exitMutex;
 };
 
 TUCUBE_IMODULE_FUNCTIONS;
 TUCUBE_ICORE_FUNCTIONS;
+
+
+static void tucube_Core_pthreadCleanupHandler(void* args) {
+    struct tucube_Core* core = args;
+
+    if(core->tucube_IBase_tlDestroy(GENC_LIST_HEAD(core->moduleList)) == -1)
+        warnx("%s: %u: tucube_Module_tlDestroy() failed", __FILE__, __LINE__);
+    pthread_mutex_lock(core->exitMutex);
+    core->exit = true;
+    pthread_cond_signal(core->exitCond);
+    pthread_mutex_unlock(core->exitMutex);
+}
 
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
     warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
