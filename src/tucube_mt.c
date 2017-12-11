@@ -8,6 +8,7 @@
 #include <tucube/tucube_Module.h>
 #include <tucube/tucube_IModule.h>
 #include <tucube/tucube_ICore.h>
+#include "tucube_IMt.h"
 #include <libgenc/genc_Tree.h>
 
 struct tucube_mt_Interface {
@@ -23,18 +24,21 @@ struct tucube_mt_LocalModule {
 
 TUCUBE_IMODULE_FUNCTIONS;
 TUCUBE_ICORE_FUNCTIONS;
-TUCUBE_IMT_FUNCTIONS;
 
 
-static void tucube_Core_pthreadCleanupHandler(void* args) {
-    struct tucube_Core* core = args;
-
-    if(core->tucube_IBase_tlDestroy(GENC_LIST_HEAD(core->moduleList)) == -1)
-        warnx("%s: %u: tucube_Module_tlDestroy() failed", __FILE__, __LINE__);
-    pthread_mutex_lock(core->exitMutex);
-    core->exit = true;
-    pthread_cond_signal(core->exitCond);
-    pthread_mutex_unlock(core->exitMutex);
+static void tucube_mt_pthreadCleanupHandler(void* args) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+    struct tucube_Module* module = args;
+    struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
+    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
+        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
+        if(childModule->tucube_IModule_tlDestroy(childModule) == -1)
+            warnx("%s: %u: tucube_Module_tlDestroy() failed", __FILE__, __LINE__);
+    }
+    pthread_mutex_lock(localModule->exitMutex);
+    localModule->exit = true;
+    pthread_cond_signal(localModule->exitCond);
+    pthread_mutex_unlock(localModule->exitMutex);
 }
 
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
@@ -72,20 +76,6 @@ int tucube_ICore_service(struct tucube_Module* module, void* args[]) {
         }
         sleep(localModule->workerCount);
     }
-    return 0;
-}
-
-int tucube_IMt_service(struct tucube_Module* module) {
-    struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
-    struct tucube_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
-    warnx("Module message: %s", localModule->message);
-    warnx("ID of my parent module is %s", parentModule->id); 
-    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
-        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        moduleInterface->tucube_IMt_service(childModule);
-    }
-    
     return 0;
 }
 
