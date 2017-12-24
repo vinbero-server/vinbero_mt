@@ -37,6 +37,13 @@ int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* conf
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     localModule->config = config;
     TUCUBE_CONFIG_GET(config, module->id, "tucube_mt.workerCount", integer, &(localModule->workerCount), 1);
+    localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
+    localModule->exit = false;
+    localModule->exitMutex = malloc(1 * sizeof(pthread_mutex_t));
+    pthread_mutex_init(localModule->exitMutex, NULL);
+    localModule->exitCond = malloc(1 * sizeof(pthread_cond_t));
+    pthread_cond_init(localModule->exitCond, NULL);
+
 
     struct tucube_Module_Ids childModuleIds;
     GENC_ARRAY_LIST_INIT(&childModuleIds);
@@ -119,7 +126,7 @@ int tucube_ICore_service(struct tucube_Module* module, void* args[]) {
     struct tucube_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
     pthread_attr_init(&localModule->workerThreadAttr);
     pthread_attr_setdetachstate(&localModule->workerThreadAttr, PTHREAD_CREATE_JOINABLE);
-    localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
+
 
     for(size_t index = 0; index != localModule->workerCount; ++index) {
        if(pthread_create(localModule->workerThreads + index, &localModule->workerThreadAttr, tucube_mt_workerMain, (void*[]){module}) != 0)
