@@ -31,6 +31,7 @@ TUCUBE_IMODULE_FUNCTIONS;
 TUCUBE_ICORE_FUNCTIONS;
 
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     module->localModule.pointer = malloc(1 * sizeof(struct tucube_mt_LocalModule));
 
@@ -43,7 +44,6 @@ int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* conf
     pthread_mutex_init(localModule->exitMutex, NULL);
     localModule->exitCond = malloc(1 * sizeof(pthread_cond_t));
     pthread_cond_init(localModule->exitCond, NULL);
-
 
     struct tucube_Module_Ids childModuleIds;
     GENC_ARRAY_LIST_INIT(&childModuleIds);
@@ -84,12 +84,24 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_mutex_unlock(localModule->exitMutex);
 }
 
-
 static void* tucube_mt_workerMain(void* args) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_Module* module = ((void**)args)[0];
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     pthread_cleanup_push(tucube_mt_pthreadCleanupHandler, module);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+    sigset_t signalSet;
+    sigemptyset(&signalSet);
+    sigaddset(&signalSet, SIGINT);
+    if(pthread_sigmask(SIG_BLOCK, &signalSet, (void*){NULL}) != 0) {
+        warnx("%s: %u: pthread_sigmask() failed", __FILE__, __LINE__);
+        return NULL;
+    }
+/*    if(GENC_TREE_NODE_CHILD_COUNT(module) == 0) {
+        warnx("%s: %u: tucube_mt requires child modules", __FILE__, __LINE__);
+        return NULL;
+    }
+*/
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         struct tucube_mt_Interface* moduleInterface = childModule->interface;
@@ -98,15 +110,6 @@ static void* tucube_mt_workerMain(void* args) {
             return NULL;
         }
     }
-
-    sigset_t signalSet;
-    sigemptyset(&signalSet);
-    sigaddset(&signalSet, SIGINT);
-    if(pthread_sigmask(SIG_BLOCK, &signalSet, (void*){NULL}) != 0) {
-        warnx("%s: %u: pthread_sigmask() failed", __FILE__, __LINE__);
-        return NULL;
-    }
-
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         struct tucube_mt_Interface* moduleInterface = childModule->interface;
@@ -115,13 +118,12 @@ static void* tucube_mt_workerMain(void* args) {
             return NULL;
         }
     }
-
     pthread_cleanup_pop(1);
-
     return NULL;
 }
 
 int tucube_ICore_service(struct tucube_Module* module, void* args[]) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     struct tucube_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
     pthread_attr_init(&localModule->workerThreadAttr);
