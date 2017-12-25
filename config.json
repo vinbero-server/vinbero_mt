@@ -5,7 +5,7 @@
     }, 
     "tucube_mt": {
         "path": "/usr/local/lib/tucube/tucube_mt.so",
-        "config": {},
+        "config": {"tucube_mt.workerCount": 4},
         "next": []
     }
 }
