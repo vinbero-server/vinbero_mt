@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <tucube/tucube_Module.h>
 #include <tucube/tucube_IModule.h>
-#include <tucube/tucube_ICore.h>
+#include <tucube/tucube_IBasic.h>
 #include "tucube_IMt.h"
 #include <libgenc/genc_Tree.h>
 
@@ -28,7 +28,7 @@ struct tucube_mt_LocalModule {
 };
 
 TUCUBE_IMODULE_FUNCTIONS;
-TUCUBE_ICORE_FUNCTIONS;
+TUCUBE_IBASIC_FUNCTIONS;
 
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
@@ -121,7 +121,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     return NULL;
 }
 
-int tucube_ICore_service(struct tucube_Module* module, void* args[]) {
+int tucube_IBasic_service(struct tucube_Module* module, void* args[]) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     struct tucube_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
