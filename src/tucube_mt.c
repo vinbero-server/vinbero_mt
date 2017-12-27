@@ -69,16 +69,24 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     return 0;
 }
 
+static int tucube_mt_destroyChildTlModules(struct tucube_Module* module) {
+    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
+        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
+        tucube_mt_destroyChildTlModules(childModule);
+        struct tucube_mt_Interface* moduleInterface = childModule->interface;
+        if(moduleInterface->tucube_ITLocal_destroy(childModule) == -1) {
+            warnx("%s: %u: tucube_ITLocal_destroy() failed", __FILE__, __LINE__);
+            return -1;
+        }
+    }
+    return 0;
+}
+
 static void tucube_mt_pthreadCleanupHandler(void* args) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_Module* module = args;
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
-    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
-        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITLocal_destroy(childModule) == -1)
-            warnx("%s: %u: tucube_ITLocal_destroy() failed", __FILE__, __LINE__);
-    }
+    tucube_mt_destroyChildTlModules(module);
     pthread_mutex_lock(localModule->exitMutex);
     localModule->exit = true;
     pthread_cond_signal(localModule->exitCond);
@@ -163,7 +171,6 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
 
     localModule->exit = true;
     pthread_mutex_unlock(localModule->exitMutex);
-
     if(localModule->exit == false) {
         for(size_t index = 0; index != localModule->workerCount; ++index) {
             pthread_cancel(localModule->workerThreads[index]);
@@ -177,25 +184,12 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
             localModule->exit = false;
         }
     }
-
     pthread_cond_destroy(localModule->exitCond);
     free(localModule->exitCond);
     pthread_mutex_destroy(localModule->exitMutex);
     free(localModule->exitMutex);
-
-
     pthread_attr_destroy(&localModule->workerThreadAttr);
     free(localModule->workerThreads);
-
-    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
-        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITLocal_destroy(childModule) == -1) {
-            warnx("%s: %u: tucube_ITLocal_destroy() failed", __FILE__, __LINE__);
-            return -1;
-        }
-    }
-
 //    dlclose(module->dlHandle);
     return 0;
 }
