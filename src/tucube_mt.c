@@ -68,6 +68,10 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     return 0;
 }
 
+int tucube_IModule_rInit(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
+    return 0;
+}
+
 static int tucube_mt_destroyChildTlModules(struct tucube_Module* module) {
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
@@ -193,5 +197,9 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_attr_destroy(&localModule->workerThreadAttr);
     free(localModule->workerThreads);
 //    dlclose(module->dlHandle);
+    return 0;
+}
+
+int tucube_IModule_rDestroy(struct tucube_Module* module) {
     return 0;
 }
