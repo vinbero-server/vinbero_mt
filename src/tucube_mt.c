@@ -24,7 +24,7 @@ struct tucube_mt_LocalModule {
     int workerCount;
     pthread_attr_t workerThreadAttr;
     pthread_t* workerThreads;
-    bool exit;
+    bool exit; // whether one of threads exited
     pthread_cond_t* exitCond;
     pthread_mutex_t* exitMutex;
 };
@@ -35,7 +35,6 @@ TUCUBE_IBASIC_FUNCTIONS;
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     module->localModule.pointer = malloc(1 * sizeof(struct tucube_mt_LocalModule));
-
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     localModule->config = config;
     TUCUBE_CONFIG_GET(config, module->id, "tucube_mt.workerCount", integer, &(localModule->workerCount), 1);
@@ -91,6 +90,12 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     localModule->exit = true;
     pthread_cond_signal(localModule->exitCond);
     pthread_mutex_unlock(localModule->exitMutex);
+/*
+    for(size_t index = 0; index != localModule->workerCount; ++index) {
+        pthread_cancel(localModule->workerThreads[index]);
+        pthread_join(localModule->workerThreads[index], NULL);
+    }
+*/
 }
 
 static void* tucube_mt_workerMain(void* args) {
@@ -138,19 +143,16 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_attr_init(&localModule->workerThreadAttr);
     pthread_attr_setdetachstate(&localModule->workerThreadAttr, PTHREAD_CREATE_JOINABLE);
 
-
     for(size_t index = 0; index != localModule->workerCount; ++index) {
        if(pthread_create(localModule->workerThreads + index, &localModule->workerThreadAttr, tucube_mt_workerMain, (void*[]){module}) != 0)
             err(EXIT_FAILURE, "%s: %u", __FILE__, __LINE__);
     }
-
     pthread_mutex_lock(localModule->exitMutex);
     while(localModule->exit != true) {
-        pthread_cond_wait(localModule->exitCond,
-             localModule->exitMutex);
+        if(pthread_cond_wait(localModule->exitCond, localModule->exitMutex) != 0)
+            warnx("pthread_cond_wait() error %s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     }
     pthread_mutex_unlock(localModule->exitMutex);
-
     for(size_t index = 0; index != localModule->workerCount; ++index) {
         pthread_cancel(localModule->workerThreads[index]);
         pthread_join(localModule->workerThreads[index], NULL);
@@ -161,7 +163,22 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
 int tucube_IModule_destroy(struct tucube_Module* module) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
-       GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
+    if(localModule->exit == false) {
+        pthread_mutex_unlock(localModule->exitMutex);
+        for(size_t index = 0; index != localModule->workerCount; ++index) {
+            pthread_cancel(localModule->workerThreads[index]);
+            pthread_mutex_lock(localModule->exitMutex);
+            while(localModule->exit != true) {
+                if(pthread_cond_wait(localModule->exitCond, localModule->exitMutex) != 0)
+                    warnx("pthread_cond_wait() error %s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+            }
+            pthread_mutex_unlock(localModule->exitMutex);
+            pthread_join(localModule->workerThreads[index], NULL);
+            localModule->exit = false;
+        }
+        localModule->exit = true;
+    }
+    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         free(childModule->interface);
     }
@@ -169,21 +186,6 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     if(module->tlModuleKey != NULL)
         free(module->tlModuleKey);
 
-    localModule->exit = true;
-    pthread_mutex_unlock(localModule->exitMutex);
-    if(localModule->exit == false) {
-        for(size_t index = 0; index != localModule->workerCount; ++index) {
-            pthread_cancel(localModule->workerThreads[index]);
-            pthread_mutex_lock(localModule->exitMutex);
-            while(localModule->exit != true) {
-                pthread_cond_wait(localModule->exitCond,
-                     localModule->exitMutex);
-            }
-            pthread_mutex_unlock(localModule->exitMutex);
-            pthread_join(localModule->workerThreads[index], NULL);
-            localModule->exit = false;
-        }
-    }
     pthread_cond_destroy(localModule->exitCond);
     free(localModule->exitCond);
     pthread_mutex_destroy(localModule->exitMutex);
