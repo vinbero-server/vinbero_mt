@@ -56,12 +56,20 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
             warnx("%s: %u: Unable to find tucube_ITLocal_init()", __FILE__, __LINE__);
             return -1;
         }
+        if((moduleInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_rInit")) == NULL) {
+            warnx("%s: %u: Unable to find tucube_ITLocal_rInit()", __FILE__, __LINE__);
+            return -1;
+        }
         if((moduleInterface->tucube_ITlService_call = dlsym(childModule->dlHandle, "tucube_ITlService_call")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITlService_call()", __FILE__, __LINE__);
             return -1;
         }
         if((moduleInterface->tucube_ITLocal_destroy = dlsym(childModule->dlHandle, "tucube_ITLocal_destroy")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_destroy()", __FILE__, __LINE__);
+            return -1;
+        }
+        if((moduleInterface->tucube_ITLocal_rDestroy = dlsym(childModule->dlHandle, "tucube_ITLocal_rDestroy")) == NULL) {
+            warnx("%s: %u: Unable to find tucube_ITLocal_rDestroy()", __FILE__, __LINE__);
             return -1;
         }
     }
@@ -77,10 +85,24 @@ static int tucube_mt_destroyChildTlModules(struct tucube_Module* module) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        tucube_mt_destroyChildTlModules(childModule);
         struct tucube_mt_Interface* moduleInterface = childModule->interface;
         if(moduleInterface->tucube_ITLocal_destroy(childModule) == -1) {
             warnx("%s: %u: tucube_ITLocal_destroy() failed", __FILE__, __LINE__);
+            return -1;
+        }
+        tucube_mt_destroyChildTlModules(childModule);
+    }
+    return 0;
+}
+
+static int tucube_mt_rDestroyChildTlModules(struct tucube_Module* module) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+    GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
+        struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
+        tucube_mt_rDestroyChildTlModules(childModule);
+        struct tucube_mt_Interface* moduleInterface = childModule->interface;
+        if(moduleInterface->tucube_ITLocal_rDestroy(childModule) == -1) {
+            warnx("%s: %u: tucube_ITLocal_rDestroy() failed", __FILE__, __LINE__);
             return -1;
         }
     }
@@ -92,6 +114,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_Module* module = args;
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     tucube_mt_destroyChildTlModules(module);
+    tucube_mt_rDestroyChildTlModules(module);
     pthread_mutex_lock(localModule->exitMutex);
     localModule->exit = true;
     pthread_cond_signal(localModule->exitCond);
