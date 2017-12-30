@@ -44,7 +44,6 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_mutex_init(localModule->exitMutex, NULL);
     localModule->exitCond = malloc(1 * sizeof(pthread_cond_t));
     pthread_cond_init(localModule->exitCond, NULL);
-
     struct tucube_Module_Ids childModuleIds;
     GENC_ARRAY_LIST_INIT(&childModuleIds);
     TUCUBE_CONFIG_GET_CHILD_MODULE_IDS(config, module->id, &childModuleIds);
@@ -119,12 +118,6 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     localModule->exit = true;
     pthread_cond_signal(localModule->exitCond);
     pthread_mutex_unlock(localModule->exitMutex);
-/*
-    for(size_t index = 0; index != localModule->workerCount; ++index) {
-        pthread_cancel(localModule->workerThreads[index]);
-        pthread_join(localModule->workerThreads[index], NULL);
-    }
-*/
 }
 
 static void* tucube_mt_workerMain(void* args) {
@@ -140,7 +133,8 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
         warnx("%s: %u: pthread_sigmask() failed", __FILE__, __LINE__);
         return NULL;
     }
-/*    if(GENC_TREE_NODE_CHILD_COUNT(module) == 0) {
+/*
+    if(GENC_TREE_NODE_CHILD_COUNT(module) == 0) {
         warnx("%s: %u: tucube_mt requires child modules", __FILE__, __LINE__);
         return NULL;
     }
@@ -207,6 +201,12 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
         }
         localModule->exit = true;
     }
+    return 0;
+}
+
+int tucube_IModule_rDestroy(struct tucube_Module* module) {
+warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+    struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         free(childModule->interface);
@@ -214,7 +214,6 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     free(module->localModule.pointer);
     if(module->tlModuleKey != NULL)
         free(module->tlModuleKey);
-
     pthread_cond_destroy(localModule->exitCond);
     free(localModule->exitCond);
     pthread_mutex_destroy(localModule->exitMutex);
@@ -222,10 +221,5 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_attr_destroy(&localModule->workerThreadAttr);
     free(localModule->workerThreads);
 //    dlclose(module->dlHandle);
-    return 0;
-}
-
-int tucube_IModule_rDestroy(struct tucube_Module* module) {
-warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     return 0;
 }
