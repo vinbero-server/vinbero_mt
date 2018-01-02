@@ -52,28 +52,28 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         childModule->interface = malloc(1 * sizeof(struct tucube_mt_Interface));
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if((moduleInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_init")) == NULL) {
+        struct tucube_mt_Interface* childInterface = childModule->interface;
+        if((childInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_init")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_init()", __FILE__, __LINE__);
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
-        if((moduleInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_rInit")) == NULL) {
+        if((childInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_rInit")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_rInit()", __FILE__, __LINE__);
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
-        if((moduleInterface->tucube_ITlService_call = dlsym(childModule->dlHandle, "tucube_ITlService_call")) == NULL) {
+        if((childInterface->tucube_ITlService_call = dlsym(childModule->dlHandle, "tucube_ITlService_call")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITlService_call()", __FILE__, __LINE__);
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
-        if((moduleInterface->tucube_ITLocal_destroy = dlsym(childModule->dlHandle, "tucube_ITLocal_destroy")) == NULL) {
+        if((childInterface->tucube_ITLocal_destroy = dlsym(childModule->dlHandle, "tucube_ITLocal_destroy")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_destroy()", __FILE__, __LINE__);
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
-        if((moduleInterface->tucube_ITLocal_rDestroy = dlsym(childModule->dlHandle, "tucube_ITLocal_rDestroy")) == NULL) {
+        if((childInterface->tucube_ITLocal_rDestroy = dlsym(childModule->dlHandle, "tucube_ITLocal_rDestroy")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_rDestroy()", __FILE__, __LINE__);
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
@@ -91,8 +91,8 @@ static int tucube_mt_destroyChildTlModules(struct tucube_Module* module) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITLocal_destroy(childModule) == -1) {
+        struct tucube_mt_Interface* childInterface = childModule->interface;
+        if(childInterface->tucube_ITLocal_destroy(childModule) == -1) {
             warnx("%s: %u: tucube_ITLocal_destroy() failed", __FILE__, __LINE__);
             return -1;
         }
@@ -106,8 +106,8 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         tucube_mt_rDestroyChildTlModules(childModule);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITLocal_rDestroy(childModule) == -1) {
+        struct tucube_mt_Interface* childInterface = childModule->interface;
+        if(childInterface->tucube_ITLocal_rDestroy(childModule) == -1) {
             warnx("%s: %u: tucube_ITLocal_rDestroy() failed", __FILE__, __LINE__);
             return -1;
         }
@@ -148,16 +148,16 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
 */
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITLocal_init(childModule, localModule->config, (void*[]){NULL}) == -1) {
+        struct tucube_mt_Interface* childInterface = childModule->interface;
+        if(childInterface->tucube_ITLocal_init(childModule, localModule->config, (void*[]){NULL}) == -1) {
             warnx("%s: %u: tucube_ITLocal_init() failed", __FILE__, __LINE__);
             return NULL;
         }
     }
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct tucube_mt_Interface* moduleInterface = childModule->interface;
-        if(moduleInterface->tucube_ITlService_call(childModule, (void*){NULL}) == -1) {
+        struct tucube_mt_Interface* childInterface = childModule->interface;
+        if(childInterface->tucube_ITlService_call(childModule, (void*){NULL}) == -1) {
             warnx("%s: %u: tucube_ITlService_call() failed", __FILE__, __LINE__);
             return NULL;
         }
