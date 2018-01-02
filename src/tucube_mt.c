@@ -34,6 +34,8 @@ TUCUBE_IBASIC_FUNCTIONS;
 
 int tucube_IModule_init(struct tucube_Module* module, struct tucube_Config* config, void* args[]) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+    module->name = "tucube_mt";
+    module->version = "0.0.1";
     module->localModule.pointer = malloc(1 * sizeof(struct tucube_mt_LocalModule));
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     localModule->config = config;
