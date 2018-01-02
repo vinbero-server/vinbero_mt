@@ -53,28 +53,13 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         childModule->interface = malloc(1 * sizeof(struct tucube_mt_Interface));
         struct tucube_mt_Interface* childInterface = childModule->interface;
-        if((childInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_init")) == NULL) {
-            warnx("%s: %u: Unable to find tucube_ITLocal_init()", __FILE__, __LINE__);
-            GENC_ARRAY_LIST_FREE(&childModuleIds);
-            return -1;
-        }
-        if((childInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_rInit")) == NULL) {
-            warnx("%s: %u: Unable to find tucube_ITLocal_rInit()", __FILE__, __LINE__);
-            GENC_ARRAY_LIST_FREE(&childModuleIds);
-            return -1;
-        }
-        if((childInterface->tucube_ITlService_call = dlsym(childModule->dlHandle, "tucube_ITlService_call")) == NULL) {
-            warnx("%s: %u: Unable to find tucube_ITlService_call()", __FILE__, __LINE__);
-            GENC_ARRAY_LIST_FREE(&childModuleIds);
-            return -1;
-        }
-        if((childInterface->tucube_ITLocal_destroy = dlsym(childModule->dlHandle, "tucube_ITLocal_destroy")) == NULL) {
-            warnx("%s: %u: Unable to find tucube_ITLocal_destroy()", __FILE__, __LINE__);
-            GENC_ARRAY_LIST_FREE(&childModuleIds);
-            return -1;
-        }
-        if((childInterface->tucube_ITLocal_rDestroy = dlsym(childModule->dlHandle, "tucube_ITLocal_rDestroy")) == NULL) {
-            warnx("%s: %u: Unable to find tucube_ITLocal_rDestroy()", __FILE__, __LINE__);
+        int errorVariable;
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_init, &errorVariable);
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_rInit, &errorVariable);
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITlService_call, &errorVariable);
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_destroy, &errorVariable);
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_rDestroy, &errorVariable);
+        if(errorVariable == 1) {
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
