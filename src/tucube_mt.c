@@ -39,7 +39,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     module->localModule.pointer = malloc(1 * sizeof(struct tucube_mt_LocalModule));
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     localModule->config = config;
-    TUCUBE_CONFIG_GET(config, module->id, "tucube_mt.workerCount", integer, &(localModule->workerCount), 1);
+    TUCUBE_CONFIG_GET(config, module, "tucube_mt.workerCount", integer, &(localModule->workerCount), 1);
     localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
     localModule->exit = false;
     localModule->exitMutex = malloc(1 * sizeof(pthread_mutex_t));
@@ -55,22 +55,27 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
         struct tucube_mt_Interface* moduleInterface = childModule->interface;
         if((moduleInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_init")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_init()", __FILE__, __LINE__);
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
         if((moduleInterface->tucube_ITLocal_init = dlsym(childModule->dlHandle, "tucube_ITLocal_rInit")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_rInit()", __FILE__, __LINE__);
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
         if((moduleInterface->tucube_ITlService_call = dlsym(childModule->dlHandle, "tucube_ITlService_call")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITlService_call()", __FILE__, __LINE__);
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
         if((moduleInterface->tucube_ITLocal_destroy = dlsym(childModule->dlHandle, "tucube_ITLocal_destroy")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_destroy()", __FILE__, __LINE__);
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
         if((moduleInterface->tucube_ITLocal_rDestroy = dlsym(childModule->dlHandle, "tucube_ITLocal_rDestroy")) == NULL) {
             warnx("%s: %u: Unable to find tucube_ITLocal_rDestroy()", __FILE__, __LINE__);
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
         }
     }
