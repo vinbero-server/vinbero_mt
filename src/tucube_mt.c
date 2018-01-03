@@ -55,10 +55,26 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
         struct tucube_mt_Interface* childInterface = childModule->interface;
         int errorVariable;
         TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_init, &errorVariable);
+        if(errorVariable == 1) {
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
+            return -1;
+        }
         TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_rInit, &errorVariable);
-        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITlService_call, &errorVariable);
+        if(errorVariable == 1) {
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
+            return -1;
+        }
         TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_destroy, &errorVariable);
+        if(errorVariable == 1) {
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
+            return -1;
+        }
         TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITLocal_rDestroy, &errorVariable);
+        if(errorVariable == 1) {
+            GENC_ARRAY_LIST_FREE(&childModuleIds);
+            return -1;
+        }
+        TUCUBE_MODULE_DLSYM(childInterface, childModule->dlHandle, tucube_ITlService_call, &errorVariable);
         if(errorVariable == 1) {
             GENC_ARRAY_LIST_FREE(&childModuleIds);
             return -1;
@@ -115,6 +131,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
 static void* tucube_mt_workerMain(void* args) {
 warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     struct tucube_Module* module = ((void**)args)[0];
+    void** argsToPass = ((void**)args)[1];
     struct tucube_mt_LocalModule* localModule = module->localModule.pointer;
     pthread_cleanup_push(tucube_mt_pthreadCleanupHandler, module);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -134,7 +151,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         struct tucube_mt_Interface* childInterface = childModule->interface;
-        if(childInterface->tucube_ITLocal_init(childModule, localModule->config, (void*[]){NULL}) == -1) {
+        if(childInterface->tucube_ITLocal_init(childModule, localModule->config, argsToPass) == -1) {
             warnx("%s: %u: tucube_ITLocal_init() failed", __FILE__, __LINE__);
             return NULL;
         }
@@ -142,7 +159,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct tucube_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         struct tucube_mt_Interface* childInterface = childModule->interface;
-        if(childInterface->tucube_ITlService_call(childModule, (void*){NULL}) == -1) {
+        if(childInterface->tucube_ITlService_call(childModule, argsToPass) == -1) {
             warnx("%s: %u: tucube_ITlService_call() failed", __FILE__, __LINE__);
             return NULL;
         }
@@ -159,7 +176,7 @@ warnx("%s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
     pthread_attr_setdetachstate(&localModule->workerThreadAttr, PTHREAD_CREATE_JOINABLE);
 
     for(size_t index = 0; index != localModule->workerCount; ++index) {
-       if(pthread_create(localModule->workerThreads + index, &localModule->workerThreadAttr, tucube_mt_workerMain, (void*[]){module}) != 0)
+       if(pthread_create(localModule->workerThreads + index, &localModule->workerThreadAttr, tucube_mt_workerMain, (void*[]){module, args}) != 0)
             err(EXIT_FAILURE, "%s: %u", __FILE__, __LINE__);
     }
     pthread_mutex_lock(localModule->exitMutex);
