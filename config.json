@@ -1,11 +1,11 @@
 {
     "core": {
-        "config": {"tucube.setUid": 1001},
-        "next": ["tucube_mt"]
+        "config": {"vinbero.setUid": 1001},
+        "next": ["vinbero_mt"]
     }, 
-    "tucube_mt": {
-        "path": "/usr/local/lib/tucube/tucube_mt.so",
-        "config": {"tucube_mt.workerCount": 4},
+    "vinbero_mt": {
+        "path": "/usr/local/lib/vinbero/vinbero_mt.so",
+        "config": {"vinbero_mt.workerCount": 4},
         "next": []
     }
 }
