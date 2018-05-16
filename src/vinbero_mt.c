@@ -191,7 +191,7 @@ static void* vinbero_mt_workerMain(void* args) {
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
         struct vinbero_mt_Interface childInterface;
-        VINBERO_ITLOCAL_DLSYM(&childInterface, &childModule->dlHandle, &ret);
+        VINBERO_ITLSERVICE_DLSYM(&childInterface, &childModule->dlHandle, &ret);
         if(ret < 0)
             return NULL;
         if((ret = childInterface.vinbero_ITlService_call(childModule, argsToPass)) < 0) {
