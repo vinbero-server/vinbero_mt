@@ -62,10 +62,13 @@ int vinbero_IModule_init(struct vinbero_common_Module* module, struct vinbero_co
             return ret;
         }
     }
+/*
     if(vinbero_common_Config_getChildModuleCount(config, module->id) <= 0) {
         VINBERO_COMMON_LOG_ERROR("%s: %u: vinbero_mt requires child modules", __FILE__, __LINE__);
         return VINBERO_COMMON_EINVAL;
     } // this will be checked by vinbero core
+*/
+
     return 0;
 }
 
@@ -239,7 +242,7 @@ int vinbero_IModule_destroy(struct vinbero_common_Module* module) {
             pthread_mutex_lock(localModule->exitMutex);
             while(localModule->exit != true) {
                 if(pthread_cond_wait(localModule->exitCond, localModule->exitMutex) != 0)
-                    VINBERO_COMMON_LOG_ERROR("pthread_cond_wait() error %s: %u: %s", __FILE__, __LINE__, __FUNCTION__);
+                    VINBERO_COMMON_LOG_ERROR("pthread_cond_wait() error");
             }
             pthread_mutex_unlock(localModule->exitMutex);
             pthread_join(localModule->workerThreads[index], NULL);
@@ -261,6 +264,7 @@ int vinbero_IModule_rDestroy(struct vinbero_common_Module* module) {
     pthread_mutex_destroy(localModule->exitMutex);
     free(localModule->exitMutex);
     pthread_attr_destroy(&localModule->workerThreadAttr);
+
     free(localModule->workerThreads);
 //    dlclose(module->dlHandle);
     return 0;
