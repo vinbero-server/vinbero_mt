@@ -22,7 +22,6 @@ struct vinbero_mt_Interface {
 };
 
 struct vinbero_mt_LocalModule {
-    struct vinbero_common_Config* config;
     int workerCount;
     pthread_attr_t workerThreadAttr;
     pthread_t* workerThreads;
@@ -34,15 +33,14 @@ struct vinbero_mt_LocalModule {
 VINBERO_INTERFACE_MODULE_FUNCTIONS;
 VINBERO_INTERFACE_BASIC_FUNCTIONS;
 
-int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module, struct vinbero_common_Config* config, void* args[]) {
+int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     module->name = "vinbero_mt";
     module->version = "0.0.1";
     module->localModule.pointer = malloc(1 * sizeof(struct vinbero_mt_LocalModule));
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
-    localModule->config = config;
-    vinbero_common_Config_getInt(config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
+    vinbero_common_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
     localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
     localModule->exit = false;
     localModule->exitMutex = malloc(1 * sizeof(pthread_mutex_t));
@@ -75,34 +73,33 @@ int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module, struct v
     return 0;
 }
 
-int vinbero_Interface_MODULE_rInit(struct vinbero_common_Module* module, struct vinbero_common_Config* config, void* args[]) {
+int vinbero_Interface_MODULE_rInit(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     return 0;
 }
 
-
-static int vinbero_mt_initChildTlModules(struct vinbero_common_Module* module, struct vinbero_common_Config* config) {
+static int vinbero_mt_initChildTlModules(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        VINBERO_COMMON_CALL(TLOCAL, init, childModule, &ret, childModule, config, (void*[]){NULL});
+        VINBERO_COMMON_CALL(TLOCAL, init, childModule, &ret, childModule);
         if(ret < 0)
             return ret;
-        if(vinbero_mt_initChildTlModules(childModule, config) < 0)
+        if(vinbero_mt_initChildTlModules(childModule) < 0)
             return ret;
     }
     return 0;
 }
 
-static int vinbero_mt_rInitChildTlModules(struct vinbero_common_Module* module, struct vinbero_common_Config* config) {
+static int vinbero_mt_rInitChildTlModules(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        if((ret = vinbero_mt_rInitChildTlModules(childModule, config)) < 0)
+        if((ret = vinbero_mt_rInitChildTlModules(childModule)) < 0)
             return ret;
-        VINBERO_COMMON_CALL(TLOCAL, rInit, childModule, &ret, childModule, config, (void*[]){NULL});
+        VINBERO_COMMON_CALL(TLOCAL, rInit, childModule, &ret, childModule);
         if(ret < 0)
             return ret;
     }
@@ -164,8 +161,8 @@ static void* vinbero_mt_workerMain(void* args) {
         VINBERO_COMMON_LOG_ERROR("%s: %u: pthread_sigmask() failed", __FILE__, __LINE__);
         return NULL;
     }
-    vinbero_mt_initChildTlModules(module, localModule->config);
-    vinbero_mt_rInitChildTlModules(module, localModule->config);
+    vinbero_mt_initChildTlModules(module);
+    vinbero_mt_rInitChildTlModules(module);
 /*
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
