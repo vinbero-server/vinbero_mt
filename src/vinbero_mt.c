@@ -10,13 +10,13 @@
 #include <vinbero_common/vinbero_common_Config.h>
 #include <vinbero_common/vinbero_common_Log.h>
 #include <vinbero_common/vinbero_common_Module.h>
-#include <vinbero/vinbero_Interface_MODULE.h>
-#include <vinbero/vinbero_Interface_BASIC.h>
-#include <vinbero/vinbero_Interface_TLOCAL.h>
-#include <vinbero/vinbero_Interface_TLSERVICE.h>
+#include <vinbero/vinbero_interface_MODULE.h>
+#include <vinbero/vinbero_interface_BASIC.h>
+#include <vinbero/vinbero_interface_TLOCAL.h>
+#include <vinbero/vinbero_interface_TLSERVICE.h>
 #include <libgenc/genc_Tree.h>
 
-struct vinbero_mt_Interface {
+struct vinbero_mt_interface {
     VINBERO_INTERFACE_TLOCAL_FUNCTION_POINTERS;
     VINBERO_INTERFACE_TLSERVICE_FUNCTION_POINTERS;
 };
@@ -33,7 +33,7 @@ struct vinbero_mt_LocalModule {
 VINBERO_INTERFACE_MODULE_FUNCTIONS;
 VINBERO_INTERFACE_BASIC_FUNCTIONS;
 
-int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module) {
+int vinbero_interface_MODULE_init(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     module->name = "vinbero_mt";
@@ -50,13 +50,13 @@ int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module) {
 /*
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct vinbero_mt_Interface childInterface;
-        VINBERO_INTERFACE_TLOCAL_DLSYM(&childInterface, &childModule->dlHandle, &ret); 
+        struct vinbero_mt_interface childinterface;
+        VINBERO_INTERFACE_TLOCAL_DLSYM(&childinterface, &childModule->dlHandle, &ret); 
         if(ret < 0) {
             VINBERO_COMMON_LOG_ERROR("module %s doesn't satisfy ITLOCAL interface", childModule->id);
             return ret;
         }
-        VINBERO_INTERFACE_TLSERVICE_DLSYM(&childInterface, &childModule->dlHandle, &ret); 
+        VINBERO_INTERFACE_TLSERVICE_DLSYM(&childinterface, &childModule->dlHandle, &ret); 
         if(ret < 0) {
             VINBERO_COMMON_LOG_ERROR("module %s doesn't satisfy ITLSERVICE interface", childModule->id);
             return ret;
@@ -73,7 +73,7 @@ int vinbero_Interface_MODULE_init(struct vinbero_common_Module* module) {
     return 0;
 }
 
-int vinbero_Interface_MODULE_rInit(struct vinbero_common_Module* module) {
+int vinbero_interface_MODULE_rInit(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     return 0;
 }
@@ -166,7 +166,7 @@ static void* vinbero_mt_workerMain(void* args) {
 /*
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
-        struct vinbero_mt_Interface childInterface;
+        struct vinbero_mt_interface childinterface;
         VINBERO_COMMON_CALL(TLOCAL, init, childModule, &ret, childModule, localModule->config, argsToPass);
         if(ret < 0)
             return NULL;
@@ -182,7 +182,7 @@ static void* vinbero_mt_workerMain(void* args) {
     return NULL;
 }
 
-int vinbero_Interface_BASIC_service(struct vinbero_common_Module* module, void* args[]) {
+int vinbero_interface_BASIC_service(struct vinbero_common_Module* module, void* args[]) {
     VINBERO_COMMON_LOG_TRACE2();
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     struct vinbero_common_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
@@ -208,7 +208,7 @@ int vinbero_Interface_BASIC_service(struct vinbero_common_Module* module, void* 
     return 0;
 }
 
-int vinbero_Interface_MODULE_destroy(struct vinbero_common_Module* module) {
+int vinbero_interface_MODULE_destroy(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     if(localModule->exit == false) {
@@ -229,7 +229,7 @@ int vinbero_Interface_MODULE_destroy(struct vinbero_common_Module* module) {
     return 0;
 }
 
-int vinbero_Interface_MODULE_rDestroy(struct vinbero_common_Module* module) {
+int vinbero_interface_MODULE_rDestroy(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     free(module->localModule.pointer);
