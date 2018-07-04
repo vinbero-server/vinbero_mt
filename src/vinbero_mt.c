@@ -17,6 +17,7 @@
 #include <vinbero/vinbero_interface_TLOCAL.h>
 #include <vinbero/vinbero_interface_TLSERVICE.h>
 #include <libgenc/genc_Tree.h>
+#include "vinbero_mt_Version.h"
 
 struct vinbero_mt_interface {
     VINBERO_INTERFACE_TLOCAL_FUNCTION_POINTERS;
@@ -39,7 +40,7 @@ int vinbero_interface_MODULE_init(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     module->name = "vinbero_mt";
-    module->version = "0.0.1";
+    module->version = VINBERO_MT_VERSION;
     module->localModule.pointer = malloc(1 * sizeof(struct vinbero_mt_LocalModule));
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     vinbero_common_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);

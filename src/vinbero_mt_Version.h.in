@@ -1,0 +1,6 @@
+#ifndef _VINBERO_VERSION_H
+#define _VINBERO_VERSION_H
+
+#define VINBERO_MT_VERSION "@vinbero_mt_version@"
+
+#endif
