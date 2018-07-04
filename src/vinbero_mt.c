@@ -40,7 +40,7 @@ int vinbero_interface_MODULE_init(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     module->name = "vinbero_mt";
-    module->version = VINBER_MT_VERSION;
+    module->version = VINBERO_MT_VERSION;
     module->localModule.pointer = malloc(1 * sizeof(struct vinbero_mt_LocalModule));
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     vinbero_common_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
