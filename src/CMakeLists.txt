@@ -1,9 +1,15 @@
 add_library(vinbero_mt MODULE vinbero_mt.c)
 set_target_properties(vinbero_mt PROPERTIES PREFIX "")
 set_target_properties(vinbero_mt PROPERTIES
-                                 VERSION 0.1.0
-                                 SOVERSION 0.1
+                                 VERSION ${vinbero_mt_version}
+                                 SOVERSION ${vinbero_mt_soversion}
                                  PUBLIC_HEADER "")
+
+find_library(fastdl libfastdl.so REQUIRED)
+find_library(gaio libgaio.so.0.3 REQUIRED)
+find_library(vinbero_common libvinbero_common.so REQUIRED)
+target_link_libraries(vinbero_mt ${vinbero_common} ${fastdl} ${gaio})
+
 install(TARGETS vinbero_mt
         LIBRARY DESTINATION lib/vinbero
         PUBLIC_HEADER DESTINATION include/vinbero)
