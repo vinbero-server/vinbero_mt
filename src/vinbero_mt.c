@@ -260,10 +260,11 @@ int vinbero_interface_MODULE_destroy(struct vinbero_common_Module* module) {
 int vinbero_interface_MODULE_rDestroy(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
-    free(module->localModule.pointer);
     pthread_attr_destroy(&localModule->workerThreadAttr);
-
     free(localModule->workerThreads);
+    close(module->exitPipe[0]);
+    close(module->exitPipe[1]);
+    free(module->localModule.pointer);
 //    dlclose(module->dlHandle);
     return VINBERO_COMMON_STATUS_SUCCESS;
 }
