@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(vinbero_mt C)
-set(vinbero_mt_version "0.1.1")
+set(vinbero_mt_version "0.1.2")
 set(vinbero_mt_soversion "0.1")
 
 if(CMAKE_VERSION VERSION_LESS "3.1")
