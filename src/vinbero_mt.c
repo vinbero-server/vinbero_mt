@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/eventfd.h>
 #include <unistd.h>
 #include <vinbero_common/vinbero_common_Status.h>
 #include <vinbero_common/vinbero_common_Error.h>
@@ -29,7 +30,7 @@ struct vinbero_mt_LocalModule {
     pthread_attr_t workerThreadAttr;
     pthread_t* workerThreads;
     bool exit; // whether one of threads exited
-    int exitPipe[2];
+    int exitEventFd;
 };
 
 VINBERO_INTERFACE_MODULE_FUNCTIONS;
@@ -45,7 +46,8 @@ int vinbero_interface_MODULE_init(struct vinbero_common_Module* module) {
     vinbero_common_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
     localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
     localModule->exit = false;
-    pipe(localModule->exitPipe);
+    localModule->exitEventFd = eventfd(0, EFD_SEMAPHORE);
+
 /*
     GENC_TREE_NODE_FOR_EACH_CHILD(module, index) {
         struct vinbero_common_Module* childModule = &GENC_TREE_NODE_GET_CHILD(module, index);
@@ -156,6 +158,7 @@ static int vinbero_mt_rDestroyChildTlModules(struct vinbero_common_TlModule* tlM
 
 static void vinbero_mt_pthreadCleanupHandler(void* arg) {
     VINBERO_COMMON_LOG_TRACE2();
+    int ret;
     struct vinbero_common_TlModule* tlModule = arg;
     VINBERO_COMMON_LOG_TRACE2();
 
@@ -163,8 +166,8 @@ static void vinbero_mt_pthreadCleanupHandler(void* arg) {
     vinbero_mt_destroyChildTlModules(tlModule);
     vinbero_mt_rDestroyChildTlModules(tlModule);
     localModule->exit = true;
-    write(localModule->exitPipe[1], "v", 1);
-
+    uint64_t counter = 1;
+    ret = write(localModule->exitEventFd, &counter, sizeof(counter));
 }
 
 static void* vinbero_mt_workerMain(void* arg) {
@@ -218,6 +221,7 @@ static void* vinbero_mt_workerMain(void* arg) {
 
 int vinbero_interface_BASIC_service(struct vinbero_common_Module* module) {
     VINBERO_COMMON_LOG_TRACE2();
+    int ret;
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     struct vinbero_common_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
 
@@ -230,9 +234,8 @@ int vinbero_interface_BASIC_service(struct vinbero_common_Module* module) {
             return VINBERO_COMMON_ERROR_UNKNOWN;
        }
     }
-
-    char c;
-    read(localModule->exitPipe[0], &c, 1);
+    uint64_t counter;
+    ret = read(localModule->exitEventFd, &counter, sizeof(counter));
 
     for(size_t index = 0; index != localModule->workerCount; ++index) {
         pthread_cancel(localModule->workerThreads[index]);
@@ -247,8 +250,8 @@ int vinbero_interface_MODULE_destroy(struct vinbero_common_Module* module) {
     if(localModule->exit == false) {
         for(size_t index = 0; index != localModule->workerCount; ++index) {
             pthread_cancel(localModule->workerThreads[index]);
-            char c;
-            read(localModule->exitPipe[0], &c, 1);
+            uint64_t counter;
+            read(localModule->exitEventFd, &counter, sizeof(counter));
             pthread_join(localModule->workerThreads[index], NULL);
             localModule->exit = false;
         }
@@ -262,8 +265,7 @@ int vinbero_interface_MODULE_rDestroy(struct vinbero_common_Module* module) {
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     pthread_attr_destroy(&localModule->workerThreadAttr);
     free(localModule->workerThreads);
-    close(localModule->exitPipe[0]);
-    close(localModule->exitPipe[1]);
+    close(localModule->exitEventFd);
     free(module->localModule.pointer);
 //    dlclose(module->dlHandle);
     return VINBERO_COMMON_STATUS_SUCCESS;
