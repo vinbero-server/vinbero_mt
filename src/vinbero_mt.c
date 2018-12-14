@@ -29,6 +29,7 @@ struct vinbero_mt_LocalModule {
     int workerCount;
     pthread_attr_t workerThreadAttr;
     pthread_t* workerThreads;
+    int* workerThreadExitEventFds;
     bool exit; // whether one of threads exited
     int exitEventFd;
 };
@@ -45,6 +46,10 @@ int vinbero_interface_MODULE_init(struct vinbero_common_Module* module) {
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     vinbero_common_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
     localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
+    localModule->workerThreadExitEventFds = malloc(localModule->workerCount * sizeof(int));
+    for(size_t index = 0; index != localModule->workerCount; ++index)
+        localModule->workerThreadExitEventFds[index] = eventfd(0, 0);
+
     localModule->exit = false;
     localModule->exitEventFd = eventfd(0, EFD_SEMAPHORE);
 
@@ -174,7 +179,8 @@ static void* vinbero_mt_workerMain(void* arg) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     struct vinbero_common_TlModule* tlModule = malloc(sizeof(struct vinbero_common_TlModule) * sizeof(char)); 
-    tlModule->module = arg;
+    tlModule->module = ((void**)arg)[0];
+    tlModule->exitEventFd = ((void**)arg)[1];
     tlModule->localTlModule.pointer = NULL;
     tlModule->arg = tlModule->module->arg;
 
@@ -229,7 +235,10 @@ int vinbero_interface_BASIC_service(struct vinbero_common_Module* module) {
     pthread_attr_setdetachstate(&localModule->workerThreadAttr, PTHREAD_CREATE_JOINABLE);
 
     for(size_t index = 0; index != localModule->workerCount; ++index) {
-       if(pthread_create(localModule->workerThreads + index, &localModule->workerThreadAttr, vinbero_mt_workerMain, module) != 0) {
+       if(pthread_create(localModule->workerThreads + index,
+                         &localModule->workerThreadAttr,
+                         vinbero_mt_workerMain,
+                         (void*[]){module, &localModule->workerThreadExitEventFds[index]}) != 0) {
             VINBERO_COMMON_LOG_ERROR("pthread_create() failed");
             return VINBERO_COMMON_ERROR_UNKNOWN;
        }
@@ -265,6 +274,9 @@ int vinbero_interface_MODULE_rDestroy(struct vinbero_common_Module* module) {
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     pthread_attr_destroy(&localModule->workerThreadAttr);
     free(localModule->workerThreads);
+    for(size_t index = 0; index != localModule->workerCount; ++index)
+        close(localModule->workerThreadExitEventFds[index]);
+
     close(localModule->exitEventFd);
     free(module->localModule.pointer);
 //    dlclose(module->dlHandle);
