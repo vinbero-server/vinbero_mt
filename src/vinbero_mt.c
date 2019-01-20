@@ -94,10 +94,11 @@ int vinbero_interface_MODULE_rInit(struct vinbero_common_Module* module) {
 
 static int vinbero_mt_loadChildTlModules(struct vinbero_common_TlModule* tlModule) {
     int ret;
-    GENC_TREE_NODE_INIT3(tlModule, GENC_TREE_NODE_GET_CHILD_COUNT(tlModule->module));
-    GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
-        childTlModule->module = &GENC_TREE_NODE_GET_CHILD(tlModule->module, index);
+    GENC_TREE_NODE_INIT2(tlModule, GENC_TREE_NODE_CHILD_COUNT(tlModule->module));
+    GENC_TREE_NODE_FOR_EACH_CHILD(tlModule->module, index) {
+        struct vinbero_common_TlModule* childTlModule = malloc(sizeof(struct vinbero_common_TlModule));
+        GENC_TREE_NODE_ADD_CHILD(tlModule, childTlModule);
+        childTlModule->module = GENC_TREE_NODE_GET_CHILD(tlModule->module, index);
         childTlModule->localTlModule.pointer = NULL;
         childTlModule->arg = NULL;
         childTlModule->exitEventFd = tlModule->exitEventFd;
@@ -112,7 +113,7 @@ static int vinbero_mt_initChildTlModules(struct vinbero_common_TlModule* tlModul
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
+        struct vinbero_common_TlModule* childTlModule = GENC_TREE_NODE_GET_CHILD(tlModule, index);
         if(childTlModule->arg == NULL)
             childTlModule->arg = tlModule->arg;
         VINBERO_COMMON_CALL(TLOCAL, init, childTlModule->module, &ret, childTlModule);
@@ -129,7 +130,7 @@ static int vinbero_mt_rInitChildTlModules(struct vinbero_common_TlModule* tlModu
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
+        struct vinbero_common_TlModule* childTlModule = GENC_TREE_NODE_GET_CHILD(tlModule, index);
         ret = vinbero_mt_rInitChildTlModules(childTlModule);
         if(ret < VINBERO_COMMON_STATUS_SUCCESS)
             return ret;
@@ -144,7 +145,7 @@ static int vinbero_mt_destroyChildTlModules(struct vinbero_common_TlModule* tlMo
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
+        struct vinbero_common_TlModule* childTlModule = GENC_TREE_NODE_GET_CHILD(tlModule, index);
         VINBERO_COMMON_CALL(TLOCAL, destroy, childTlModule->module, &ret, childTlModule);
         if(ret < VINBERO_COMMON_STATUS_SUCCESS)
             return ret;
@@ -159,14 +160,17 @@ static int vinbero_mt_rDestroyChildTlModules(struct vinbero_common_TlModule* tlM
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
     GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
+        struct vinbero_common_TlModule* childTlModule = GENC_TREE_NODE_GET_CHILD(tlModule, index);
         ret = vinbero_mt_rDestroyChildTlModules(childTlModule);
         if(ret < VINBERO_COMMON_STATUS_SUCCESS)
             return ret;
         VINBERO_COMMON_CALL(TLOCAL, rDestroy, childTlModule->module, &ret, childTlModule);
         if(ret < VINBERO_COMMON_STATUS_SUCCESS)
             return ret;
+        GENC_TREE_NODE_FREE(childTlModule);
+        free(childTlModule);
     }
+
     return VINBERO_COMMON_STATUS_SUCCESS;
 }
 
@@ -184,7 +188,7 @@ static void vinbero_mt_pthreadCleanupHandler(void* arg) {
 static void* vinbero_mt_workerMain(void* arg) {
     VINBERO_COMMON_LOG_TRACE2();
     int ret;
-    struct vinbero_common_TlModule* tlModule = malloc(sizeof(struct vinbero_common_TlModule) * sizeof(char)); 
+    struct vinbero_common_TlModule* tlModule = malloc(1 * sizeof(struct vinbero_common_TlModule)); 
     struct vinbero_mt_workerMain_Arg* args = arg;
     tlModule->module = args->module;
     tlModule->exitEventFd = args->exitEventFd;
@@ -222,7 +226,7 @@ static void* vinbero_mt_workerMain(void* arg) {
     }
 
     GENC_TREE_NODE_FOR_EACH_CHILD(tlModule, index) {
-        struct vinbero_common_TlModule* childTlModule = &GENC_TREE_NODE_GET_CHILD(tlModule, index);
+        struct vinbero_common_TlModule* childTlModule = GENC_TREE_NODE_GET_CHILD(tlModule, index);
         childTlModule->arg = tlModule->arg; 
         VINBERO_COMMON_CALL(TLSERVICE, call, childTlModule->module, &ret, childTlModule);
         if(ret < VINBERO_COMMON_STATUS_SUCCESS)
