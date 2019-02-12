@@ -36,6 +36,14 @@ struct vinbero_mt_LocalModule {
 
 VINBERO_IFACE_MODULE_FUNCTIONS;
 VINBERO_IFACE_BASIC_FUNCTIONS;
+VINBERO_COM_MODULE_META_INIT(
+    "vinbero_mt",
+    VINBERO_MT_VERSION_MAJOR,
+    VINBERO_MT_VERSION_MINOR,
+    VINBERO_MT_VERSION_PATCH,
+    "BASIC",
+    "TLOCAL,TLSERVICE"
+);
 
 int vinbero_iface_MODULE_init(struct vinbero_com_Module* module) {
     VINBERO_COM_LOG_TRACE2();
