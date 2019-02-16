@@ -51,7 +51,6 @@ struct vinbero_mt_LocalModule {
 
 int vinbero_iface_MODULE_init(struct vinbero_com_Module* module) {
     VINBERO_COM_LOG_TRACE2();
-    int ret;
     module->localModule.pointer = malloc(1 * sizeof(struct vinbero_mt_LocalModule));
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     vinbero_com_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
@@ -156,11 +155,7 @@ static int vinbero_mt_rDestroyChildTlModules(struct vinbero_com_TlModule* tlModu
 
 static void vinbero_mt_pthreadCleanupHandler(void* arg) {
     VINBERO_COM_LOG_TRACE2();
-    int ret;
     struct vinbero_com_TlModule* tlModule = arg;
-    VINBERO_COM_LOG_TRACE2();
-
-    struct vinbero_mt_LocalModule* localModule = tlModule->module->localModule.pointer;
     vinbero_mt_destroyChildTlModules(tlModule);
     vinbero_mt_rDestroyChildTlModules(tlModule);
 }
@@ -175,8 +170,6 @@ static void* vinbero_mt_workerMain(void* arg) {
 
     tlModule->localTlModule.pointer = NULL;
     tlModule->arg = tlModule->module->arg;
-
-    struct vinbero_mt_LocalModule* localModule = tlModule->module->localModule.pointer;
 
     pthread_cleanup_push(vinbero_mt_pthreadCleanupHandler, tlModule);
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
@@ -219,9 +212,7 @@ static void* vinbero_mt_workerMain(void* arg) {
 
 int vinbero_iface_BASIC_service(struct vinbero_com_Module* module) {
     VINBERO_COM_LOG_TRACE2();
-    int ret;
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
-    struct vinbero_com_Module* parentModule = GENC_TREE_NODE_GET_PARENT(module);
 
     pthread_attr_init(&localModule->workerThreadAttr);
     pthread_attr_setdetachstate(&localModule->workerThreadAttr, PTHREAD_CREATE_JOINABLE);
