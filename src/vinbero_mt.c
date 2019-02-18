@@ -158,6 +158,7 @@ static void vinbero_mt_pthreadCleanupHandler(void* arg) {
     struct vinbero_com_TlModule* tlModule = arg;
     vinbero_mt_destroyChildTlModules(tlModule);
     vinbero_mt_rDestroyChildTlModules(tlModule);
+    free(tlModule);
 }
 
 static void* vinbero_mt_workerMain(void* arg) {
