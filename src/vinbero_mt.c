@@ -55,7 +55,7 @@ int vinbero_iface_MODULE_init(struct vinbero_com_Module* module) {
     struct vinbero_mt_LocalModule* localModule = module->localModule.pointer;
     vinbero_com_Config_getInt(module->config, module, "vinbero_mt.workerCount", &(localModule->workerCount), 1);
 
-    localModule->workerThreads = malloc(localModule->workerCount * sizeof(pthread_t));
+    localModule->workerThreads = calloc(localModule->workerCount, sizeof(pthread_t));
     localModule->workerThreadExitEventFds = malloc(localModule->workerCount * sizeof(int));
     localModule->workerThreadArgs = malloc(localModule->workerCount * sizeof(struct vinbero_mt_workerMain_Arg));
     for(size_t index = 0; index != localModule->workerCount; ++index) {
