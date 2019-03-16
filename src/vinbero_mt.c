@@ -13,10 +13,10 @@
 #include <vinbero_com/vinbero_com_Config.h>
 #include <vinbero_com/vinbero_com_Log.h>
 #include <vinbero_com/vinbero_com_Module.h>
-#include <vinbero/vinbero_iface_MODULE.h>
-#include <vinbero/vinbero_iface_BASIC.h>
-#include <vinbero/vinbero_iface_TLOCAL.h>
-#include <vinbero/vinbero_iface_TLSERVICE.h>
+#include <vinbero_iface_MODULE/vinbero_iface_MODULE.h>
+#include <vinbero_iface_BASIC/vinbero_iface_BASIC.h>
+#include <vinbero_iface_TLOCAL/vinbero_iface_TLOCAL.h>
+#include <vinbero_iface_TLSERVICE/vinbero_iface_TLSERVICE.h>
 #include <libgenc/genc_Tree.h>
 #include "config.h"
 
